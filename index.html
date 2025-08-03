@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>角色记录系统</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    body {
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+    h1 {
+      text-align: center;
+      margin: 20px 0;
+      color: #333;
+    }
+   .nav {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+   .nav button {
+      padding: 8px 16px;
+      border: none;
+      background: #4285f4;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+   .nav button:hover {
+      background: #3367d6;
+    }
+   .page {
+      display: none;
+    }
+   .active {
+      display: block;
+    }
+   .form-group {
+      display: flex;
+      gap: 10px;
+      margin: 15px 0;
+      align-items: flex-end;
+    }
+    input, select, button {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+   .btn {
+      padding: 5px 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 3px;
+      font-size: 14px;
+      margin-right: 5px;
+    }
+   .del {
+      background: #ea4335;
+      color: white;
+    }
+   .add {
+      background: #34a853;
+      color: white;
+    }
+   .view {
+      background: #fbbc05;
+      color: white;
+    }
+   .edit {
+      background: #4285f4;
+      color: white;
+    }
+   .role-form, .role-list {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+   .role-list {
+      align-items: center;
+    }
+   .autocomplete {
+      position: relative;
+      flex: 1;
+    }
+   .autocomplete-items {
+      position: absolute;
+      border: 1px solid #ddd;
+      background: white;
+      max-height: 150px;
+      overflow-y: auto;
+      width: 100%;
+      z-index: 100;
+    }
+   .autocomplete-items div {
+      padding: 8px;
+      cursor: pointer;
+    }
+   .autocomplete-items div:hover {
+      background: #f1f1f1;
+    }
+   .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>角色记录系统</h1>
+  
+  <div class="nav">
+    <button onclick="showPage('record')">记录角色</button>
+    <button onclick="showPage('search')">搜索角色</button>
+  </div>
+
+  <!-- 记录页面 -->
+  <div id="record" class="page active">
+    <div class="form-group">
+      <input type="text" id="qqName" placeholder="QQ名" style="flex:1">
+      <input type="text" id="friendCode" placeholder="好友码" style="flex:1">
+      <button onclick="addUser()" class="btn add">添加用户</button>
+    </div>
+
+    <table>
+      <tr>
+        <<<th>序号</</th>
+        <<<th>QQ名</</th>
+        <<<th>好友码</</th>
+        <<<th>操作</</th>
+      </tr>
+      <tbody id="userList"></tbody>
+    </table>
+  </div>
+<!-- 搜索页面 -->
+  <div id="search" class="page">
+    <div class="form-group">
+      <input type="text" id="searchName" placeholder="角色名" style="flex:1">
+      <select id="searchFavor" style="flex:1">
+        <option value="">好感度</option>
+        <option value="五十">好感50</option>
+        <option value="非五十">好感非50</option>
+      </select>
+      <select id="searchWeapon" style="flex:1">
+        <option value="">专武等级</option>
+        <option value="三星">三星</option>
+        <option value="专一">专一</option>
+        <option value="专二">专二</option>
+        <option value="专三">专三</option>
+        <option value="专四">专四</option>
+      </select>
+      <button onclick="doSearch()" class="btn add">搜索</button>
+    </div>
+
+    <table>
+      <tr>
+        <<<th>QQ名</</th>
+        <<<th>好友码</</th>
+        <<<th>匹配角色</</th>
+      </tr>
+      <tbody id="searchResult"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // 数据存储
+    let users = JSON.parse(localStorage.getItem('users') || '[]');
+    let allRoles = []; // 用于自动补全的角色名库
+    renderUsers();
+
+    // 页面切换
+    function showPage(id) {
+      document.querySelectorAll('.page').forEach(page => {
+        page.classList.remove('active');
+      });
+      document.getElementById(id).classList.add('active');
+    }
+
+    // 添加用户
+    function addUser() {
+      const qq = document.getElementById('qqName').value.trim();
+      const code = document.getElementById('friendCode').value.trim();
+      if (qq && code) {
+        users.push({
+          id: Date.now(),
+          qq,
+          code,
+          roles: []
+        });
+        saveData();
+        renderUsers();
+        document.getElementById('qqName').value = '';
+        document.getElementById('friendCode').value = '';
+      }
+    }
+
+    // 删除用户
+    function delUser(id) {
+      users = users.filter(u => u.id!== id);
+      saveData();
+      renderUsers();
+    }
+
+    // 显示/隐藏角色列表
+    function toggleRoles(userId) {
+      const roleList = document.getElementById(`roles-${userId}`);
+      roleList.classList.toggle('hidden');
+    }
+
+    // 显示添加角色表单
+    function showAddRoleForm(userId) {
+      // 先隐藏其他表单
+document.querySelectorAll('.role-form').forEach(form => form.remove());
+      
+      const userEl = document.querySelector(`tr[data-id="${userId}"]`);
+      const form = document.createElement('tr');
+      form.className = 'role-form';
+      form.innerHTML = `
+        <td colspan="4">
+          <div class="autocomplete">
+            <input type="text" id="roleName-${userId}" placeholder="角色名">
+            <div class="autocomplete-items" id="auto-${userId}"></div>
+          </div>
+          <select id="favor-${userId}">
+            <option value="五十">好感50</option>
+            <option value="非五十">好感非50</option>
+          </select>
+          <select id="weapon-${userId}">
+            <option value="三星">三星</option>
+            <option value="专一">专一</option>
+            <option value="专二">专二</option>
+            <option value="专三">专三</option>
+            <option value="专四">专四</option>
+          </select>
+          <button onclick="addRole(${userId})" class="btn add">保存</button>
+        </td>
+      `;
+      userEl.after(form);
+      setupAutocomplete(userId);
+    }
+
+    // 设置角色名自动补全
+    function setupAutocomplete(userId) {
+      const input = document.getElementById(`roleName-${userId}`);
+      const autoBox = document.getElementById(`auto-${userId}`);
+
+      input.addEventListener('input', () => {
+        const val = input.value.toLowerCase();
+        autoBox.innerHTML = '';
+        if (!val) return;
+
+        const matches = [...new Set(allRoles)]
+         .filter(role => role.toLowerCase().includes(val))
+         .slice(0, 5);
+
+        matches.forEach(role => {
+          const div = document.createElement('div');
+          div.textContent = role;
+          div.onclick = () => {
+            input.value = role;
+            autoBox.innerHTML = '';
+          };
+          autoBox.appendChild(div);
+        });
+      });
+    }
+
+    // 添加角色
+    function addRole(userId) {
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+
+      const roleName = document.getElementById(`roleName-${userId}`).value.trim();
+      const favor = document.getElementById(`favor-${userId}`).value;
+      const weapon = document.getElementById(`weapon-${userId}`).value;
+
+      if (roleName) {
+        user.roles.push({ 
+          id: Date.now(),
+          roleName, 
+          favor, 
+          weapon 
+        });
+        allRoles.push(roleName);
+        saveData();
+        renderUsers();
+      }
+    }
+
+    // 编辑角色
+    function editRole(userId, roleId) {
+      const user = users.find(u => u.id === userId);
+      const role = user.roles.find(r => r.id === roleId);
+      if (!user ||!role) return;
+
+      // 显示编辑表单
+      const roleEl = document.getElementById(`role-${userId}-${roleId}`);
+      roleEl.innerHTML = `
+        <td colspan="4">
+          <div class="autocomplete">
+            <input type="text" id="editName-${userId}-${roleId}" value="${role.roleName}">
+            <div class="autocomplete-items" id="editAuto-${userId}-${roleId}"></div>
+          </div>
+          <select id="editFavor-${userId}-${roleId}">
+            <option value="五十" ${role.favor === '五十'? 'selected' : ''}>好感50</option>
+            <option value="非五十" ${role.favor === '非五十'? 'selected' : ''}>好感非50</option>
+          </select>
+          <select id="editWeapon-${userId}-${roleId}">
+            <option value="三星" ${role.weapon === '三星'? 'selected' : ''}>三星</option>
+            <option value="专一" ${role.weapon === '专一'? 'selected' : ''}>专一</option>
+            <option value="专二" ${role.weapon === '专二'? 'selected' : ''}>专二</option>
+            <option value="专三" ${role.weapon === '专三'? 'selected' : ''}>专三</option>
+            <option value="专四" ${role.weapon === '专四'? 'selected' : ''}>专四</option>
+          </select>
+          <button onclick="saveEdit(${userId}, ${roleId})" class="btn edit">确认</button>
+        </td>
+      `;
+      setupEditAutocomplete(userId, roleId);
+    }
+
+    // 保存编辑
+    function saveEdit(userId, roleId) {
+      const user = users.find(u => u.id === userId);
+      const role = user.roles.find(r => r.id === roleId);
+      if (!user ||!role) return;
+
+      role.roleName = document.getElementById(`editName-${userId}-${roleId}`).value.trim();
+      role.favor = document.getElementById(`editFavor-${userId}-${roleId}`).value;
+      role.weapon = document.getElementById(`editWeapon-${userId}-${roleId}`).value;
+      
+      saveData();
+      renderUsers();
+    }
+
+    // 编辑时的自动补全
+function setupEditAutocomplete(userId, roleId) {
+      const input = document.getElementById(`editName-${userId}-${roleId}`);
+      const autoBox = document.getElementById(`editAuto-${userId}-${roleId}`);
+
+      input.addEventListener('input', () => {
+        const val = input.value.toLowerCase();
+        autoBox.innerHTML = '';
+        if (!val) return;
+
+        const matches = [...new Set(allRoles)]
+         .filter(role => role.toLowerCase().includes(val))
+         .slice(0, 5);
+
+        matches.forEach(role => {
+          const div = document.createElement('div');
+          div.textContent = role;
+          div.onclick = () => {
+            input.value = role;
+            autoBox.innerHTML = '';
+          };
+          autoBox.appendChild(div);
+        });
+      });
+    }
+
+    // 删除角色
+    function delRole(userId, roleId) {
+      const user = users.find(u => u.id === userId);
+      if (user) {
+        user.roles = user.roles.filter(r => r.id!== roleId);
+        saveData();
+        renderUsers();
+      }
+    }
+
+    // 搜索角色（增加好感度筛选）
+    function doSearch() {
+      const name = document.getElementById('searchName').value.trim().toLowerCase();
+      const favor = document.getElementById('searchFavor').value;
+      const weapon = document.getElementById('searchWeapon').value;
+      const resultEl = document.getElementById('searchResult');
+      resultEl.innerHTML = '';
+
+      users.forEach(user => {
+        const matchRoles = user.roles.filter(role => {
+          const nameMatch =!name || role.roleName.toLowerCase().includes(name);
+          const favorMatch =!favor || role.favor === favor;
+          const weaponMatch =!weapon || role.weapon === weapon;
+          return nameMatch && favorMatch && weaponMatch;
+        });
+
+        if (matchRoles.length > 0) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${user.qq}</td>
+            <td>${user.code}</td>
+            <td>${matchRoles.map(r => `${r.roleName}(${r.favor}/${r.weapon})`).join(', ')}</td>
+          `;
+          resultEl.appendChild(tr);
+        }
+      });
+    }
+
+    // 渲染用户列表（角色默认隐藏，通过查看按钮切换）
+    function renderUsers() {
+      const listEl = document.getElementById('userList');
+      listEl.innerHTML = '';
+
+      users.forEach((user, index) => {
+        // 用户行
+        const tr = document.createElement('tr');
+        tr.dataset.id = user.id;
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${user.qq}</td>
+          <td>${user.code}</td>
+          <td>
+            <button onclick="delUser(${user.id})" class="btn del">删除</button>
+            <button onclick="toggleRoles(${user.id})" class="btn view">查看角色</button>
+            <button onclick="showAddRoleForm(${user.id})" class="btn add">添加角色</button>
+          </td>
+        `;
+        listEl.appendChild(tr);
+
+        // 角色列表（默认隐藏）
+        const roleContainer = document.createElement('tr');
+        roleContainer.id = `roles-${user.id}`;
+        roleContainer.className = 'hidden';
+        roleContainer.innerHTML = `<td colspan="4"><div id="roleList-${user.id}"></div></td>`;
+        listEl.appendChild(roleContainer);
+
+        // 角色内容
+        const roleList = document.getElementById(`roleList-${user.id}`);
+        user.roles.forEach(role => {
+          const roleEl = document.createElement('div');
+          roleEl.id = `role-${user.id}-${role.id}`;
+          roleEl.className = 'role-list';
+          roleEl.innerHTML = `
+            <div style="flex:2">${role.roleName}</div>
+            <div style="flex:1">好感: ${role.favor}</div>
+            <div style="flex:1">专武: ${role.weapon}</div>
+            <button onclick="editRole(${user.id}, ${role.id})" class="btn edit">编辑</button>
+            <button onclick="delRole(${user.id}, ${role.id})" class="btn del">删除</button>
+          `;
+          roleList.appendChild(roleEl);
+        });
+      });
+    }
+
+    // 保存数据到本地存储
+    function saveData() {
+      localStorage.setItem('users', JSON.stringify(users));
+    }
+  </script>
+</body>
+</html>
